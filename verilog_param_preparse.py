@@ -343,6 +343,9 @@ def main(
 ):
 
     out_dict = parse_p_cell_lef(pcell_lef)
+    if len(out_dict) == 0:
+        # if no pcell lefs are empty no files created
+        return
 
     if isinstance(out_lef_csv, str):
         pass

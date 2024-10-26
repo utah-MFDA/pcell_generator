@@ -38,10 +38,16 @@ $(PCELL_MERGE_LEF) $(DESIGN_PCELL_MERGE): $(VERILOG_SRC) $(PCELL_LEF)
 		 --out_lef_csv $(RESULTS_DIR)/preparse.csv \
 		 --conversion_file_dir $(RESULTS_DIR)
 
+ifneq (,$(wildcard $(PCELL_MERGE_LEF)))
 export ADDITIONAL_LEFS += $(PCELL_MERGE_LEF)
+endif
 
+ifneq (,$(wildcard $(RESULTS_DIR)/pcell_out_scad))
 SCAD_ARGS += --pcell_file $(RESULTS_DIR)/pcell_out_scad
+endif
+ifneq (,$(wildcard $(RESULTS_DIR)/pcell_out_xyce))
 SIMULATION_ARGS += --pcell_file $(RESULTS_DIR)/pcell_out_xyce
+endif
 
 # Testing ----------------------------------------------------------
 
