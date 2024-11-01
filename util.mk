@@ -4,21 +4,25 @@ FLOW_HOME ?= ..
 TESTING_PLATFORM ?= mfda_30px
 PLATFORM ?= $(TESTING_PLATFORM)
 
-V_PRE_TOOL_HOME = $(FLOW_HOME)/../tools/verilog_preparser/
+V_PRE_TOOL_HOME = $(FLOW_HOME)/../tools/p_cell_generator/
 
-RESULTS_DIR ?= $(FLOW_HOME)/results/$(DESIGN)/$(DESIGN_VARIANT)
+RESULTS_DIR ?= $(FLOW_HOME)/results/$(DESIGN_NAME)/$(DESIGN_VARIANT)
 
+ifneq (,$(wildcard $(FLOW_HOME)/platforms/$(PLATFORM)/pdk/Components/p_serpentine/p_cell_serpentines.lef))
+PCELL_LEF ?= $(FLOW_HOME)/platforms/$(PLATFORM)/pdk/Components/p_serpentine/p_cell_serpentines.lef
+else
 PCELL_LEF ?= $(V_PRE_TOOL_HOME)/lef/p_cell_serpentines.lef
+endif
 
 P_CELL_SCRIPT = $(V_PRE_TOOL_HOME)/verilog_param_preparse.py
 
 # PCELL_MERGE_LEF=$(OPENROAD_FLOW_DIR)/platforms/$(PLATFORM)/lef/$(PLATFORM)_merged_w_pcells.lef
 ORIG_LEF = $(FLOW_HOME)/platforms/$(PLATFORM)/lef/$(PLATFORM)_merged.lef
 
-PCELL_MERGE_LEF = $(RESULTS_DIR)/$(PLATFORM)_$(DESIGN)_pcells.lef
-DESIGN_PCELL_MERGE = $(V_PRE_TOOL_HOME)/designs/$(DESIGN)/$(PLATFORM)/prev_out_pcell.lef
+PCELL_MERGE_LEF = $(RESULTS_DIR)/$(PLATFORM)_$(DESIGN_NAME)_pcells.lef
+DESIGN_PCELL_MERGE = $(V_PRE_TOOL_HOME)/designs/$(DESIGN_NAME)/$(PLATFORM)/prev_out_pcell.lef
 
-VERILOG_SRC = $(FLOW_HOME)/designs/src/$(DESIGN)/$(DESIGN).v
+VERILOG_SRC = $(FLOW_HOME)/designs/src/$(DESIGN_NAME)/$(DESIGN_NAME).v
 
 .PHONY: verilog_preparse
 verilog_preparse: 

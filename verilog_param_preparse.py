@@ -38,6 +38,7 @@ def parse_p_cell_lef(in_lef):
     lef_mods = {}
 
     for m in mo:
+        print("Found module:", m.group("module_name"))
         m_params = regex.findall(bytes(param_reg, "utf-8"), m.group("params"))
         # m_params = regex.findall(bytes(param_reg,'utf-8'), m)
 
@@ -123,7 +124,7 @@ def get_pcells_in_lib(lib_csv):
 
 
 def parse_verilog_modules(
-    in_v, lef_regs, out_lef_merge=None, conversion_file=None, debug=True
+    in_v, lef_regs, out_lef_merge=None, conversion_file=None, debug=False
 ):
     module_reg = r"^[ ]*module\s+(?P<module_name>[a-zA-Z][\w]*)\s*\((?P<module_ports>[\s\w,]*)\)\s*;(?P<module_netlist>[\s\w_.,\(\);]*?)endmodule"
     input_reg = r"^[ ]*input\s*(?P<input_port>[\w*, \n]*);"
@@ -170,8 +171,8 @@ def parse_verilog_modules(
         this_comp_reg = c1_reg + r[1]['pcell_reg'] + c2_reg
 
         with open(in_v, "r+") as f:
-            print(f"Looking for {r[1]['pcell_reg']}")
-            print("REG:", this_comp_reg)
+            #print(f"Looking for {r[1]['pcell_reg']}")
+            #print("REG:", this_comp_reg)
             data = mmap.mmap(f.fileno(), 0)
             mo = regex.findall(bytes(this_comp_reg, "utf-8"), data, re.MULTILINE)
 
@@ -200,12 +201,14 @@ def parse_verilog_modules(
                     bytes(get_mod_lef_reg, "utf-8"), data, re.MULTILINE
                 )
                 if lef_mo is None:
-                    print(get_mod_lef_reg)
-                    print(r[1]["lef_loc"])
-                    print(data.read().decode("utf-8"))
+                    if debug:
+                        print(get_mod_lef_reg)
+                        print(r[1]["lef_loc"])
+                        print(data.read().decode("utf-8"))
                 lef_mo = lef_mo.group(0)
             ### write compatible LEF
-            print(lef_mo)
+            if debug:
+                print(lef_mo)
             replace_lef_mod = r[1]["pcell"]
             for param in r[1][4:]:
                 if p[param] % 1 == 0:
