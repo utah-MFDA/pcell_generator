@@ -1,6 +1,8 @@
 import os
+import shutil
 
-import regex, re
+import regex
+import re
 import mmap
 import pandas as pd
 import numpy as np
@@ -124,7 +126,7 @@ def get_pcells_in_lib(lib_csv):
 
 
 def parse_verilog_modules(
-    in_v, lef_regs, out_lef_merge=None, conversion_file=None, debug=False
+    in_v, lef_regs, out_lef_merge=None, conversion_file=None, debug=False, append_lef=False
 ):
     module_reg = r"^[ ]*module\s+(?P<module_name>[a-zA-Z][\w]*)\s*\((?P<module_ports>[\s\w,]*)\)\s*;(?P<module_netlist>[\s\w_.,\(\);]*?)endmodule"
     input_reg = r"^[ ]*input\s*(?P<input_port>[\w*, \n]*);"
@@ -162,6 +164,10 @@ def parse_verilog_modules(
         os.makedirs(os.path.dirname(out_lef_merge), exist_ok=True)
     out_f = open(out_lef_merge, "w+")
 
+    out_f.write("VERSION 5.7 ;\n")
+    out_f.write('BUSBITCHARS "[]" ;\n')
+    out_f.write('DIVIDERCHAR "/" ;\n\n')
+
     p_cell_out_list = []
 
     print(f"looking in {in_v}")
@@ -171,10 +177,11 @@ def parse_verilog_modules(
         this_comp_reg = c1_reg + r[1]['pcell_reg'] + c2_reg
 
         with open(in_v, "r+") as f:
-            #print(f"Looking for {r[1]['pcell_reg']}")
-            #print("REG:", this_comp_reg)
+            # print(f"Looking for {r[1]['pcell_reg']}")
+            # print("REG:", this_comp_reg)
             data = mmap.mmap(f.fileno(), 0)
-            mo = regex.findall(bytes(this_comp_reg, "utf-8"), data, re.MULTILINE)
+            mo = regex.findall(
+                bytes(this_comp_reg, "utf-8"), data, re.MULTILINE)
 
         mods = []
         # for each found module
@@ -193,7 +200,8 @@ def parse_verilog_modules(
             # get lef module
             # lef_mod_reg1 + r[1]["pcell"] + lef_mod_reg2 + r[1]["pcell"] + r")[ ]*$"
             get_mod_lef_reg = (
-                lef_mod_reg1 + r[1]["pcell"] + lef_mod_reg2 + r[1]["pcell"] + r")"
+                lef_mod_reg1 + r[1]["pcell"] +
+                lef_mod_reg2 + r[1]["pcell"] + r")"
             )
             with open(r[1]["lef_loc"], "r+") as f:
                 data = mmap.mmap(f.fileno(), 0)
@@ -206,7 +214,7 @@ def parse_verilog_modules(
                         print(r[1]["lef_loc"])
                         print(data.read().decode("utf-8"))
                 lef_mo = lef_mo.group(0)
-            ### write compatible LEF
+            # write compatible LEF
             if debug:
                 print(lef_mo)
             replace_lef_mod = r[1]["pcell"]
@@ -256,7 +264,8 @@ def parse_verilog_modules(
             # used for downstream pcells
             p_cell_out_list.append(
                 # {'pcell':m[0].decode('utf-8'), 'lef':r[1]['pcell'], 'params':p}
-                {"pcell": r[1]["pcell"], "lef": m[0].decode("utf-8"), "params": p}
+                {"pcell": r[1]["pcell"], "lef": m[0].decode(
+                    "utf-8"), "params": p}
             )
 
     # conversion file is used to link lef definitions to other pcells
@@ -266,7 +275,7 @@ def parse_verilog_modules(
         else:
             o_dir = os.path.dirname(conversion_file)
         write_downstream_pcell_csv(
-            p_cell_out_list, convert_pcell_list=["xyce", "scad"], out_dir=o_dir
+            p_cell_out_list, convert_pcell_list=["xyce", "scad"], out_dir=o_dir, append_lists=append_lef
         )
 
     # get modules
@@ -277,13 +286,14 @@ def parse_verilog_modules(
     #    mo = regex.findall(mod_re_b, data, re.MULTILINE)
 
 
-def write_downstream_pcell_csv(p_cell_list, convert_pcell_list, out_dir):
+def write_downstream_pcell_csv(p_cell_list, convert_pcell_list, out_dir, append_lists=False):
 
     file_name_base = "pcell_out_"
     if len(out_dir.strip()) > 0 and out_dir[-1] != "/":
         out_dir += "/"
 
-    print(f"Writing coversion files {str(convert_pcell_list).replace('[','').replace(']','')} to {out_dir}")
+    print(
+        f"Writing coversion files {str(convert_pcell_list).replace('[','').replace(']','')} to {out_dir}")
     # conversion files are assumed module : {file1:name, file2:name, ...}
     conversion_list = {}
     for pc in p_cell_list:
@@ -300,11 +310,21 @@ def write_downstream_pcell_csv(p_cell_list, convert_pcell_list, out_dir):
                 )
 
     for cl in conversion_list:
-        with open(out_dir + file_name_base + cl, "w+") as of:
-            print(f"Writing: {out_dir+file_name_base+cl}")
-            of.write("lef,cell_name,parameters\n")
-            of.write("\n".join(conversion_list[cl]))
-            of.close()
+        if append_lists and \
+                os.path.exists(out_dir + file_name_base + cl):
+            with open(out_dir + file_name_base + cl, "a") as of:
+                print(f"Appending: {out_dir+file_name_base+cl}")
+                # of.write("lef,cell_name,parameters\n")
+                of.write("\n"+"\n".join(conversion_list[cl]))
+                of.close()
+        else:
+            if append_lists:
+                print("Conversion file does not exist")
+            with open(out_dir + file_name_base + cl, "w+") as of:
+                print(f"Writing: {out_dir+file_name_base+cl}")
+                of.write("lef,cell_name,parameters\n")
+                of.write("\n".join(conversion_list[cl]))
+                of.close()
 
 
 def merge_lefs(original_lef, pcell_lef, out_lef):
@@ -342,7 +362,8 @@ def load_pcell_lef(in_lef_list):
 
 def main(
     original_lef, pcell_lef, out_lef, in_verilog, conversion_file_loc,
-    out_lef_csv, merge_with_orig_lefs=False
+    out_lef_csv, merge_with_orig_lefs=False, append_lef=False,
+    add_2_env_var=None
 ):
 
     out_dict = parse_p_cell_lef(pcell_lef)
@@ -364,13 +385,35 @@ def main(
 
     out_lef_pcell_only = out_lef + ".pcells"
 
+    if append_lef:
+        if os.path.exists(out_lef):
+            out_temp_lef = out_lef+'.tmp'
+            with open(out_temp_lef, 'w+') as olef_tmp:
+                with open(out_lef, 'r') as old_lef:
+                    olef_tmp.write(old_lef.read().replace('\nEND LIBRARY', ''))
+        else:
+            print("lef does not exist, skipping")
+
+    if add_2_env_var is not None and \
+            out_lef_pcell_only not in os.environ[add_2_env_var]:
+        os.environ[add_2_env_var] += ' '+str(out_lef_pcell_only)
+
     parse_verilog_modules(
         in_verilog,
         out_lef_csv,
         out_lef_merge=out_lef,
-        #out_lef_merge=out_lef_pcell_only,
+        # out_lef_merge=out_lef_pcell_only,
         conversion_file=conversion_file_loc,
+        append_lef=append_lef
     )
+
+    if append_lef:
+        if os.path.exists(out_lef):
+            out_temp_lef = out_lef+'.tmp'
+            with open(out_temp_lef, 'w+') as olef_tmp:
+                with open(out_lef, 'r') as old_lef:
+                    olef_tmp.write(old_lef.read())
+            shutil.move(out_temp_lef, out_lef)
 
     if merge_with_orig_lefs:
         merge_lefs(original_lef, out_lef_pcell_only, out_lef)
@@ -379,7 +422,6 @@ def main(
         #     with open(pcell_lef, "r+") as ilef:
         #         of.write(ilef.read())
         pass
-
 
 
 if __name__ == "__main__":
@@ -401,6 +443,9 @@ if __name__ == "__main__":
     parser.add_argument("--out_lef_csv", type=str, default=None)
     parser.add_argument("--conversion_file_dir", type=str, default=None)
 
+    parser.add_argument("--append_lef", action="store_true", default=False)
+    parser.add_argument("--add_file_2_env_var", type=str, default=None)
+
     args = parser.parse_args()
 
     main(
@@ -410,5 +455,6 @@ if __name__ == "__main__":
         in_verilog=args.netlist,
         conversion_file_loc=args.conversion_file_dir,
         out_lef_csv=args.out_lef_csv,
-        merge_with_orig_lefs=args.merge_lefs
+        merge_with_orig_lefs=args.merge_lefs,
+        append_lef=args.append_lef
     )
