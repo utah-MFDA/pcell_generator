@@ -195,7 +195,9 @@ def parse_verilog_modules(
             # create a parameter dict for module
             p = {}
             for ind, pr in enumerate(r[1][4:]):
-                p[pr] = float(m[1 + ind].decode("utf-8"))
+                # print(r[1])
+                if isinstance(pr, str):
+                    p[pr] = float(m[1 + ind].decode("utf-8"))
 
             # get lef module
             # lef_mod_reg1 + r[1]["pcell"] + lef_mod_reg2 + r[1]["pcell"] + r")[ ]*$"
@@ -219,8 +221,10 @@ def parse_verilog_modules(
                 print(lef_mo)
             replace_lef_mod = r[1]["pcell"]
             for param in r[1][4:]:
-                if p[param] % 1 == 0:
+                if isinstance(param, str) and p[param] % 1 == 0:
                     p[param] = int(p[param])
+                else:
+                    continue
                 replace_lef_mod += f"_{p[param]}"
                 if debug:
                     print(p_sub_1 + param + p_sub_2)
@@ -366,7 +370,13 @@ def main(
     add_2_env_var=None
 ):
 
-    out_dict = parse_p_cell_lef(pcell_lef)
+    if isinstance(pcell_lef, list):
+        out_dict = {}
+        for l in pcell_lef:
+            out_dict.update(parse_p_cell_lef(l))
+    else:
+        out_dict = parse_p_cell_lef(pcell_lef)
+
     if len(out_dict) == 0:
         # if no pcell lefs are empty no files created
         return
@@ -437,7 +447,7 @@ if __name__ == "__main__":
     # output lef file
     parser.add_argument("--out_lef", type=str, required=True)
     #
-    parser.add_argument("--pcell_lef", type=str, required=True)
+    parser.add_argument("--pcell_lef", type=str, nargs='+', required=True)
     parser.add_argument("--merge_lefs", action="store_true", default=False)
     # csv to keep track of lefs
     parser.add_argument("--out_lef_csv", type=str, default=None)
