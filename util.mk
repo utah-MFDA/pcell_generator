@@ -4,7 +4,7 @@ FLOW_HOME ?= ..
 TESTING_PLATFORM ?= mfda_30px
 PLATFORM ?= $(TESTING_PLATFORM)
 
-V_PRE_TOOL_HOME = $(FLOW_HOME)/../tools/p_cell_generator/
+V_PRE_TOOL_HOME = $(abspath $(FLOW_HOME)/../tools/p_cell_generator/)
 PDK_COMPONENTS = $(FLOW_HOME)/platforms/$(PLATFORM)/pdk/Components
 
 RESULTS_DIR ?= $(FLOW_HOME)/results/$(DESIGN_NAME)/$(DESIGN_VARIANT)
