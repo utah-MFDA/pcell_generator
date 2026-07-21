@@ -1,10 +1,14 @@
 
 # for testing
+# 	make sure to edit the util.mk
+
+
 FLOW_HOME ?= .
 TESTING_PLATFORM ?= mfda_30px
 PLATFORM ?= $(TESTING_PLATFORM)
 
 PCELL_LEF ?= $(FLOW_HOME)/../verilog_preparser/lef/p_cell_serpentines.lef
+#PCELL_LEF += $(FLOW_HOME)/new_file.lef
 
 P_CELL_SCRIPT = $(FLOW_HOME)/../verilog_preparser/verilog_param_preparse.py
 

@@ -1,13 +1,9 @@
 
-# for testing
-FLOW_HOME ?= ..
-TESTING_PLATFORM ?= mfda_30px
-PLATFORM ?= $(TESTING_PLATFORM)
 
 V_PRE_TOOL_HOME = $(abspath $(FLOW_HOME)/../tools/p_cell_generator/)
 PDK_COMPONENTS = $(FLOW_HOME)/platforms/$(PLATFORM)/pdk/Components
 
-RESULTS_DIR ?= $(FLOW_HOME)/results/$(DESIGN_NAME)/$(DESIGN_VARIANT)
+RESULTS_DIR ?= $(FLOW_HOME)/results/$(DESIGN_NAME)/$(FLOW_VARIANT)
 
 # ifneq (,$(wildcard $(FLOW_HOME)/platforms/$(PLATFORM)/pdk/Components/p_serpentine/p_cell_serpentines.lef))
 ifneq (,$(PCELL_FROM_PDK))
@@ -27,7 +23,7 @@ export PCELL_MERGE_LEF = $(RESULTS_DIR)/$(PLATFORM)_$(DESIGN_NAME)_pcells.lef
 DESIGN_PCELL_MERGE = $(V_PRE_TOOL_HOME)/designs/$(DESIGN_NAME)/$(PLATFORM)/prev_out_pcell.lef
 
 .PHONY: verilog_preparse
-verilog_preparse: 
+verilog_preparse: $(PCELL_MERGE_LEF)
 
 .PHONY: pnr_pre
 pnr_pre: $(DESIGN_PCELL_MERGE)
@@ -44,7 +40,12 @@ $(PCELL_MERGE_LEF): $(VERILOG_FILES) $(PCELL_LEF)
 			--pcell_lef $(PCELL_LEF) \
 			--out_lef_csv $(RESULTS_DIR)/preparse.csv \
 			--conversion_file_dir $(RESULTS_DIR)
-	   #--add_file_2_env_var ADDITIONAL_LEFS
+
+# if PCELL_LEF exist we need to include 
+# 	PCELL_MERGE_LEF (output) at the merge to ADDITIONAL_LEFS
+ifneq (,$(PCELL_LEF))
+export ADDITIONAL_LEFS += $(PCELL_MERGE_LEF)
+endif
 
 #SCAD_ARGS += --pcell_file $(RESULTS_DIR)/pcell_out_scad
 SCAD_PCELL = $(RESULTS_DIR)/pcell_out_scad
