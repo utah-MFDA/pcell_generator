@@ -1,4 +1,9 @@
 
+# for testing
+FLOW_HOME ?= ..
+TESTING_PLATFORM ?= mfda_30px
+PLATFORM ?= $(TESTING_PLATFORM)
+FLOW_VARIANT ?= base
 
 V_PRE_TOOL_HOME = $(abspath $(FLOW_HOME)/../tools/p_cell_generator/)
 PDK_COMPONENTS = $(FLOW_HOME)/platforms/$(PLATFORM)/pdk/Components
@@ -8,10 +13,14 @@ RESULTS_DIR ?= $(FLOW_HOME)/results/$(DESIGN_NAME)/$(FLOW_VARIANT)
 # ifneq (,$(wildcard $(FLOW_HOME)/platforms/$(PLATFORM)/pdk/Components/p_serpentine/p_cell_serpentines.lef))
 ifneq (,$(PCELL_FROM_PDK))
 export PCELL_LEF ?= $(PDK_COMPONENTS)/p_serpentine/p_cell_serpentines.lef \
+		$(PDK_COMPONENTS)/p_serpentine_cs/p_cell_serpentines_cs.lef \
+		$(PDK_COMPONENTS)/p_resistor/p_resistor.lef \
 		$(PDK_COMPONENTS)/p_valve/p_cell_valves.lef
 else
 export PCELL_LEF ?= $(V_PRE_TOOL_HOME)/lef/p_cell_serpentines.lef \
-		$(V_PRE_TOOL_HOME)/lef/p_cell_valves.lef
+		$(PDK_COMPONENTS)/p_serpentine_cs/p_cell_serpentines_cs.lef \
+		$(PDK_COMPONENTS)/p_resistor/p_resistor.lef 
+# $(V_PRE_TOOL_HOME)/lef/p_cell_valves.lef
 endif
 
 P_CELL_SCRIPT = $(V_PRE_TOOL_HOME)/verilog_param_preparse.py
@@ -23,11 +32,13 @@ export PCELL_MERGE_LEF = $(RESULTS_DIR)/$(PLATFORM)_$(DESIGN_NAME)_pcells.lef
 DESIGN_PCELL_MERGE = $(V_PRE_TOOL_HOME)/designs/$(DESIGN_NAME)/$(PLATFORM)/prev_out_pcell.lef
 
 .PHONY: verilog_preparse
-verilog_preparse: $(PCELL_MERGE_LEF)
+verilog_preparse: 
 
 .PHONY: pnr_pre
 pnr_pre: $(DESIGN_PCELL_MERGE)
 
+.PHONY: p_cell_gen
+p_cell_gen: $(PCELL_MERGE_LEF)
 #--pcell_lef $(OPENROAD_FLOW_DIR)/platforms/$(PLATFORM)/lef/$(PLATFORM)_merged_pcellonly.lef 
 #$(OPENROAD_FLOW_DIR)/verilog_preparser/designs/$(DESIGN)/$(PLATFORM)/out_merge_pcell.lef
 
@@ -40,12 +51,7 @@ $(PCELL_MERGE_LEF): $(VERILOG_FILES) $(PCELL_LEF)
 			--pcell_lef $(PCELL_LEF) \
 			--out_lef_csv $(RESULTS_DIR)/preparse.csv \
 			--conversion_file_dir $(RESULTS_DIR)
-
-# if PCELL_LEF exist we need to include 
-# 	PCELL_MERGE_LEF (output) at the merge to ADDITIONAL_LEFS
-ifneq (,$(PCELL_LEF))
-export ADDITIONAL_LEFS += $(PCELL_MERGE_LEF)
-endif
+	   #--add_file_2_env_var ADDITIONAL_LEFS
 
 #SCAD_ARGS += --pcell_file $(RESULTS_DIR)/pcell_out_scad
 SCAD_PCELL = $(RESULTS_DIR)/pcell_out_scad

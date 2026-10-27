@@ -1,0 +1,30 @@
+ 
+MACRO p_resistor(num_blocks.d, w_chan.d, h_chan.d, w3_chan.d, h3_chan.d, len_chan.d)
+  CLASS CORE ;
+  ORIGIN  0 0 ;
+  FOREIGN p_resistor 0 0 ;
+  SIZE #w_chan# BY #(4*num_blocks + 1)*len_chan# ; // add buffer room and offest accordingly in scad
+  SYMMETRY X Y ;
+  SITE CoreSite ;
+  PIN in_fluid
+    DIRECTION INPUT ;
+    USE SIGNAL ;
+    PORT
+      LAYER met1 ;
+        RECT 0.0 2.0 1.0 3.0 ; // check
+    END
+  END in_fluid
+  PIN out_fluid
+    DIRECTION OUTPUT ;
+    USE SIGNAL ;
+    PORT
+      LAYER met1 ;
+        RECT #w_chan-0.5# #(4*num_blocks+1)*len_chan-len_chan/2-0.5# #w_chan+0.5# #(4*num_blocks+1)*len_chan-len_chan/2+0.5# ; // good
+    END
+  END out_fluid
+  OBS
+    LAYER met1 ;
+      RECT 0 0 #w_chan# #(4*num_blocks + 1)*len_chan# ; // good
+  END
+  PROPERTY CatenaDesignType "deviceLevel" ;
+END p_resistor 

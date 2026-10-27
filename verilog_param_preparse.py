@@ -310,12 +310,8 @@ def write_downstream_pcell_csv(p_cell_list, convert_pcell_list, out_dir, append_
                 if file_type not in conversion_list:
                     conversion_list[file_type] = []
                 conversion_list[file_type].append(
-                    f'{pc["lef"]},' +
-                    f'{pc["pcell"]},' +
-                    f'{" ".join([x+"="+str(pc["params"][x]) for x in pc["params"]])}'
+                    f'{pc["lef"]},{pc["pcell"]},{" ".join([x+"="+str(pc["params"][x]) for x in pc["params"]])}'
                 )
-
-    print(conversion_list.keys())
 
     for cl in conversion_list:
         if append_lists and \
